@@ -26,7 +26,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://mkovgh.github.io/aboutme/Examples/scripts/</loc>
+         <loc>https://mkovgh.github.io/aboutme/Examples/shell%20scripts/</loc>
+         <lastmod>2023-04-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://mkovgh.github.io/aboutme/Examples/terraform/</loc>
          <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>

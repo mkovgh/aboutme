@@ -367,8 +367,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../scripts/" class="md-nav__link">
-        Scripts
+      <a href="../shell%20scripts/" class="md-nav__link">
+        Shell scripts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terraform/" class="md-nav__link">
+        Terraform
       </a>
     </li>
   
@@ -445,103 +459,89 @@
 Set Hostname Master Node
 
 
-<pre><code class="language-bash">    hostnamectl set-hostname k8s-master
+<pre><code class="language-bash">hostnamectl set-hostname k8s-master
 </code></pre>
 
 Set Hostname Worker Node
 
 
-<pre><code class="language-bash">    hostnamectl set-hostname k8s-worker
+<pre><code class="language-bash">hostnamectl set-hostname k8s-worker
 </code></pre>
 
 Ansible Playbook 
 
 
-<pre><code class="language-yaml">    - hosts: k8s-cluster
-    tasks:
-    - name: Configure Modules and Sysctl for Containerd
-        shell: |
-        cat &lt;&lt;EOF &gt; /etc/modules-load.d/containerd.conf
-        overlay
-        br_netfilter
-        EOF
-        modprobe overlay
-        modprobe br_netfilter
-        cat &lt;&lt;EOF &gt;  /etc/sysctl.d/k8s.conf
-        net.bridge.bridge-nf-call-ip6tables = 1
-        net.bridge.bridge-nf-call-iptables = 1
-        net.ipv4.ip_forward = 1
-        EOF
-        sysctl --system
-
-    - name: Docker Install Depends
-        apt: name=ca-certificates,gpg update_cache=true
-    - name: Add Docker GPG apt Key
-        apt_key: url=https://download.docker.com/linux/debian/gpg
-    - name: Add Docker Repository
-        apt_repository: repo=&quot;deb https://download.docker.com/linux/debian bullseye stable&quot;
-    - name: Update APT and Install docker-ce
-        apt: name=docker-ce update_cache=true
-
-    - name: Enable service Docker
-        service: name=docker enabled=yes
-    - name: Restarted service Docker
-        service: name=docker state=restarted
-
-    - name: APT Install Curl
-        apt: name=curl update_cache=true
-
-    - name: Generate Containerd Configurations
-        shell: containerd config default | tee /etc/containerd/config.toml
-    - name: Containerd Configurations chnage SystemdCgroup
-        shell: sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
-
-    - name: Add K8S GPG apt Key
-        apt_key: url=https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    - name: Add K8S Repository
-        apt_repository: repo=&quot;deb https://apt.kubernetes.io/ kubernetes-xenial main&quot;
-    - name: Update APT and Install K8S
-        apt: name=kubeadm,kubectl update_cache=true
-
-    #  - name: K8S DPKG Hold Packages
-    #    dpkg_selections: name=kubeadm,kubectl selection=hold
-
-    - name: Export K8S Configurations
-        shell: echo &quot;export KUBECONFIG=/etc/kubernetes/admin.conf&quot; &gt; /etc/environment
-
-    - name: Enable service containerd
-        service: name=containerd enabled=yes
-    - name: Restarted service containerd
-        service: name=containerd state=restarted
-
-    - name: Configure Modules and Sysctl for Containerd
-        shell: |
-        cat &lt;&lt;EOF &gt; /etc/hosts
-        127.0.0.1       localhost
-
-        ::1     localhost ip6-localhost ip6-loopback
-        ff02::1 ip6-allnodes
-        ff02::2 ip6-allrouters
-
-        172.31.50.40    k8s-master
-        172.31.50.41    k8s-worker
-        EOF
-
-    - name: Add Helm GPG apt Key
-        apt_key: url=https://baltocdn.com/helm/signing.asc
-    - name: Add Helm Repository
-        apt_repository: repo=&quot;deb https://baltocdn.com/helm/stable/debian/ all main&quot;
-    - name: Update APT and Install Helm
-        apt: name=kubeadm,kubectl update_cache=true
+<pre><code class="language-yaml">- hosts: k8s-cluster
+  tasks:
+  - name: Configure Modules and Sysctl for Containerd
+      shell: |
+      cat &lt;&lt;EOF &gt; /etc/modules-load.d/containerd.conf
+      overlay
+      br_netfilter
+      EOF
+      modprobe overlay
+      modprobe br_netfilter
+      cat &lt;&lt;EOF &gt;  /etc/sysctl.d/k8s.conf
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.bridge.bridge-nf-call-iptables = 1
+      net.ipv4.ip_forward = 1
+      EOF
+      sysctl --system
+  - name: Docker Install Depends
+      apt: name=ca-certificates,gpg update_cache=true
+  - name: Add Docker GPG apt Key
+      apt_key: url=https://download.docker.com/linux/debian/gpg
+  - name: Add Docker Repository
+      apt_repository: repo=&quot;deb https://download.docker.com/linux/debian bullseye stable&quot;
+  - name: Update APT and Install docker-ce
+      apt: name=docker-ce update_cache=true
+  - name: Enable service Docker
+      service: name=docker enabled=yes
+  - name: Restarted service Docker
+      service: name=docker state=restarted
+  - name: Generate Containerd Configurations
+      shell: containerd config default | tee /etc/containerd/config.toml
+  - name: Containerd Configurations chnage SystemdCgroup
+      shell: sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+  - name: Add K8S GPG apt Key
+      apt_key: url=https://packages.cloud.google.com/apt/doc/apt-key.gpg
+  - name: Add K8S Repository
+      apt_repository: repo=&quot;deb https://apt.kubernetes.io/ kubernetes-xenial main&quot;
+  - name: Update APT and Install K8S
+      apt: name=kubeadm,kubectl update_cache=true
+  #  - name: K8S DPKG Hold Packages
+  #    dpkg_selections: name=kubeadm,kubectl selection=hold
+  - name: Export K8S Configurations
+      shell: echo &quot;export KUBECONFIG=/etc/kubernetes/admin.conf&quot; &gt; /etc/environment
+  - name: Enable service containerd
+      service: name=containerd enabled=yes
+  - name: Restarted service containerd
+      service: name=containerd state=restarted
+  - name: Configure Modules and Sysctl for Containerd
+      shell: |
+      cat &lt;&lt;EOF &gt; /etc/hosts
+      127.0.0.1       localhost
+      ::1     localhost ip6-localhost ip6-loopback
+      ff02::1 ip6-allnodes
+      ff02::2 ip6-allrouters
+      172.31.50.40    k8s-master
+      172.31.50.41    k8s-worker
+      EOF
+  - name: Add Helm GPG apt Key
+      apt_key: url=https://baltocdn.com/helm/signing.asc
+  - name: Add Helm Repository
+      apt_repository: repo=&quot;deb https://baltocdn.com/helm/stable/debian/ all main&quot;
+  - name: Update APT and Install Helm
+      apt: name=kubeadm,kubectl update_cache=true
 </code></pre>
 
 
 After installation operation shell commands
 
 
-<pre><code class="language-bash">    kubeadm init --pod-network-cidr=10.244.0.0/16
-    export KUBECONFIG=/etc/kubernetes/admin.conf 
-    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+<pre><code class="language-bash">kubeadm init --pod-network-cidr=10.244.0.0/16
+export KUBECONFIG=/etc/kubernetes/admin.conf 
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 </code></pre>
 
 
@@ -552,57 +552,53 @@ After installation operation shell commands
 
 <summary>TP-Link</summary>
 
-TP-Link (Ver Required 4.X)
+TP-Link (Version Required 4.X)
 
 
-<pre><code class="language-yaml">    # Compatibility with all firmware is not guaranteed
+<pre><code class="language-yaml"># Compatibility with all firmware is not guaranteed
 
-    # Select hosts, hostname, port_numbers,
-    # port_range_uplink, vlans_list optional: roles and other vars
+# Select hosts, hostname, port_numbers,
+# port_range_uplink, vlans_list optional: roles and other vars
 
-    - hosts: &lt;hosts name&gt;
-    roles:
-    connection: network_cli
-    vars:
-    - hostname: &lt;hostname&gt;
-    - port_numbers: &lt;port active number&gt;
-    - portmode: port-based #type loopback
-    - port_range_uplink: &lt;main upLink&gt;
-    - vlans_list: &lt;vlans example: 1,2,3&gt;
-    - ntp_server: &lt;select ip or name server&gt;
-    - syslog_server: &lt;select ip or name server&gt;
-
-    tasks:
-
-    - name: Set HostName 
-        ios_command:
-        commands:
-        - enable
-        - configure
-        - hostname &quot;{{hostname}}&quot;
-
-    - name: Set loopback-detection, ntp-server, rsyslog-server, snmp-server
-        ios_command:
-        commands:
-        - enable
-        - configure
-        - loopback-detection
-        - loopback-detection interval 5
-        - loopback-detection recovery-time 60
-        - interface range gigabitEthernet 1/0/1-{{port_numbers}}
-        - loopback-detection
-        - loopback-detection config process-mode {{portmode}} recovery-mode auto
-        - system-time ntp UTC+03:00 {{ntp_server}} {{ntp_server}} 24
-        - logging host index 1 {{syslog_server}} 6
-        - snmp-server
-        - snmp-server community public read-only viewDefault
-
-    - name: Set VLANS on UpLink's
-        ios_command:
-        commands:
-        - enable
-        - configure
-        - interface range gigabitEthernet 1/0/{{port_range_uplink}}
+- hosts: &lt;hosts name&gt;
+  roles:
+  connection: network_cli
+  vars:
+  - hostname: &lt;hostname&gt;
+  - port_numbers: &lt;port active number&gt;
+  - portmode: port-based #type loopback
+  - port_range_uplink: &lt;main upLink&gt;
+  - vlans_list: &lt;vlans example: 1,2,3&gt;
+  - ntp_server: &lt;select ip or name server&gt;
+  - syslog_server: &lt;select ip or name server&gt;
+  tasks:
+  - name: Set HostName 
+      ios_command:
+      commands:
+      - enable
+      - configure
+      - hostname &quot;{{hostname}}&quot;
+  - name: Set loopback-detection, ntp-server, rsyslog-server, snmp-server
+      ios_command:
+      commands:
+      - enable
+      - configure
+      - loopback-detection
+      - loopback-detection interval 5
+      - loopback-detection recovery-time 60
+      - interface range gigabitEthernet 1/0/1-{{port_numbers}}
+      - loopback-detection
+      - loopback-detection config process-mode {{portmode}} recovery-mode auto
+      - system-time ntp UTC+03:00 {{ntp_server}} {{ntp_server}} 24
+      - logging host index 1 {{syslog_server}} 6
+      - snmp-server
+      - snmp-server community public read-only viewDefault
+  - name: Set VLANS on UpLink's
+      ios_command:
+      commands:
+      - enable
+      - configure
+      - interface range gigabitEthernet 1/0/{{port_range_uplink}}
 </code></pre>
 
 </details>

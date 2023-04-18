@@ -8,18 +8,20 @@
       
       
       
-        <link rel="canonical" href="https://mkovgh.github.io/aboutme/Examples/scripts/">
+        <link rel="canonical" href="https://mkovgh.github.io/aboutme/Examples/shell%20scripts/">
       
       
         <link rel="prev" href="../real%20life/">
       
+      
+        <link rel="next" href="../terraform/">
       
       <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.6">
     
     
       
-        <title>Scripts - About me</title>
+        <title>Shell scripts - About me</title>
       
     
     
@@ -101,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Scripts
+              Shell scripts
             
           </span>
         </div>
@@ -324,9 +326,23 @@
       
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Scripts
+        Shell scripts
       </a>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terraform/" class="md-nav__link">
+        Terraform
+      </a>
     </li>
   
 
@@ -369,7 +385,7 @@
                   
 
 
-  <h1>Scripts</h1>
+  <h1>Shell scripts</h1>
 
 <details>
 <summary>Prometheus install and create systemd services</summary>
@@ -377,127 +393,124 @@
 Create prometheus.sh file make the script executable (chmod +x)
 
 
-<pre><code class="language-bash">      #!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 
-      USER_NAME=prometheus
-      SERVICE_CONF=/etc/prometheus/prometheus.yml
-      SERVICE_BIN=/usr/local/bin
+USER_NAME=prometheus
+SERVICE_CONF=/etc/prometheus/prometheus.yml
+SERVICE_BIN=/usr/local/bin
 
-      which curl &gt;/dev/null || apt install -y curl
-      which wget &gt;/dev/null || apt install -y wget
+which curl &gt;/dev/null || apt install -y curl
+which wget &gt;/dev/null || apt install -y wget
 
-      creating () {
-      curl -s https://api.github.com/repos/prometheus/&quot;$SERVICE_NAME&quot;/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '&quot;' -f 4 | wget -qi -
-      tar xvf &quot;$SERVICE_NAME&quot;*.tar.gz
-      rm &quot;$SERVICE_NAME&quot;*.tar.gz &quot;$SERVICE_NAME&quot;-*/{LICENSE,NOTICE}
-      [ ! -d /etc/$SERVICE_NAME ] &amp;&amp; mkdir /etc/$SERVICE_NAME
-      mv &quot;$SERVICE_NAME&quot;-*/&quot;$SERVICE_NAME&quot; $SERVICE_BIN
-      mv &quot;$SERVICE_NAME&quot;-*/* /etc/&quot;$SERVICE_NAME&quot;/
-      rm -r &quot;$SERVICE_NAME&quot;-*
-      }
+creating () {
+ curl -s https://api.github.com/repos/prometheus/&quot;$SERVICE_NAME&quot;/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '&quot;' -f 4 | wget -qi -
+ tar xvf &quot;$SERVICE_NAME&quot;*.tar.gz
+ rm &quot;$SERVICE_NAME&quot;*.tar.gz &quot;$SERVICE_NAME&quot;-*/{LICENSE,NOTICE}
+ [ ! -d /etc/$SERVICE_NAME ] &amp;&amp; mkdir /etc/$SERVICE_NAME
+ mv &quot;$SERVICE_NAME&quot;-*/&quot;$SERVICE_NAME&quot; $SERVICE_BIN
+ mv &quot;$SERVICE_NAME&quot;-*/* /etc/&quot;$SERVICE_NAME&quot;/
+ rm -r &quot;$SERVICE_NAME&quot;-*
+}
 
-      systemd_service () {
-      getent passwd $USER_NAME &gt;/dev/null || useradd -s /sbin/nologin prometheus
-      tee /etc/systemd/system/&quot;$SERVICE_NAME&quot;.service &lt;&lt;EOF
-      [Unit]
-      Wants=network-online.target
-      Description=$SERVICE_NAME
-      After=network-online.target
+systemd_service () {
+ getent passwd $USER_NAME &gt;/dev/null || useradd -s /sbin/nologin prometheus
+ tee /etc/systemd/system/&quot;$SERVICE_NAME&quot;.service &lt;&lt;EOF
+[Unit]
+Wants=network-online.target
+Description=$SERVICE_NAME
+After=network-online.target
+[Service]
+Type=simple
+User=$USER_NAME
+Group=$USER_NAME
+ExecReload=/bin/kill -HUP $MAINPID
+$SYSTEMD_OPTION
+SyslogIdentifier=$SERVICE_NAME
+Restart=always
+[Install]
+WantedBy=multi-user.target
+EOF
+ systemctl daemon-reload
+ systemctl start $SERVICE_NAME
+ systemctl enable $SERVICE_NAME
+}
 
-      [Service]
-      Type=simple
-      User=$USER_NAME
-      Group=$USER_NAME
-      ExecReload=/bin/kill -HUP $MAINPID
-      $SYSTEMD_OPTION
+prometheus () {
+ SERVICE_NAME=prometheus
+ SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus --storage.tsdb.retention=30d --web.console.templates=/etc/rometheus/consoles --web.console.libraries=/etc/prometheus/console_libraries --web.listen-address=0.0.0.0:9090 --web.external-url= &quot;
+ [ ! -d /var/lib/$SERVICE_NAME ] &amp;&amp; mkdir /var/lib/$SERVICE_NAME &amp;&amp; chown &quot;$USER_NAME&quot;:&quot;$USER_NAME&quot; /var/lib/&quot;$SERVICE_NAME&quot;
+ creating
+ mv /etc/&quot;$SERVICE_NAME&quot;/promtool $SERVICE_BIN
+ systemd_service
+}
 
-      SyslogIdentifier=$SERVICE_NAME
-      Restart=always
+node_exporter () {
+ SERVICE_NAME=node_exporter
+ SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/node_exporter&quot;
+ creating
+ systemd_service
+ tee -a $SERVICE_CONF &lt;&lt;EOF
+- job_name: '$SERVICE_NAME'
+   scrape_interval: 5s
+   static_configs:
+      - targets: ['localhost:9100']
+EOF
+ systemctl restart prometheus.service
+}
 
-      [Install]
-      WantedBy=multi-user.target
-      EOF
-      systemctl daemon-reload
-      systemctl start $SERVICE_NAME
-      systemctl enable $SERVICE_NAME
-      }
+blackbox_exporter () {
+ SERVICE_NAME=blackbox_exporter
+ SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/blackbox_exporter --config.file=&quot;/etc/&quot;$SERVICE_NAME&quot;/blackbox.yml&quot;&quot;
+ creating
+ systemd_service
+ tee -a $SERVICE_CONF &lt;&lt;EOF
+- job_name: '$SERVICE_NAME'
+   metrics_path: /probe
+   params:
+      module: [http_2xx]
+   static_configs:
+      - targets:
+      - http://localhost:9090
+      - http://localhost:9100
+   relabel_configs:
+      - source_labels: [__address__]
+      target_label: __param_target
+      - source_labels: [__param_target]
+      target_label: instance
+      - target_label: __address__
+      replacement: localhost:9115
+EOF
+ systemctl restart prometheus.service
+}
 
-      prometheus () {
-      SERVICE_NAME=prometheus
-      SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus --storage.tsdb.retention=30d --web.console.templates=/etc/prometheus/consoles --web.console.libraries=/etc/prometheus/console_libraries --web.listen-address=0.0.0.0:9090 --web.external-url= &quot;
-      [ ! -d /var/lib/$SERVICE_NAME ] &amp;&amp; mkdir /var/lib/$SERVICE_NAME &amp;&amp; chown &quot;$USER_NAME&quot;:&quot;$USER_NAME&quot; /var/lib/&quot;$SERVICE_NAME&quot;
-      creating
-      mv /etc/&quot;$SERVICE_NAME&quot;/promtool $SERVICE_BIN
-      systemd_service
-      }
+snmp_exporter () {
+ SERVICE_NAME=snmp_exporter
+ SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/snmp_exporter --config.file=&quot;/etc/&quot;$SERVICE_NAME&quot;/snmp.yml&quot;&quot;
+ creating
+ systemd_service
+ tee -a $SERVICE_CONF &lt;&lt;EOF
+- job_name: '$SERVICE_NAME'
+   static_configs:
+      - targets:
+      - localhost # SNMP device.
+   metrics_path: /snmp
+   params:
+      module: [if_mib]
+   relabel_configs:
+      - source_labels: [__address__]
+      target_label: __param_target
+      - source_labels: [__param_target]
+      target_label: instance
+      - target_label: __address__
+      replacement: localhost:9116  # The SNMP exporter's real hostname:port.
+EOF
+ systemctl restart prometheus.service
+}
 
-      node_exporter () {
-      SERVICE_NAME=node_exporter
-      SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/node_exporter&quot;
-      creating
-      systemd_service
-      tee -a $SERVICE_CONF &lt;&lt;EOF
-      - job_name: '$SERVICE_NAME'
-         scrape_interval: 5s
-         static_configs:
-            - targets: ['localhost:9100']
-      EOF
-      systemctl restart prometheus.service
-      }
-
-      blackbox_exporter () {
-      SERVICE_NAME=blackbox_exporter
-      SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/blackbox_exporter --config.file=&quot;/etc/&quot;$SERVICE_NAME&quot;/blackbox.yml&quot;&quot;
-      creating
-      systemd_service
-      tee -a $SERVICE_CONF &lt;&lt;EOF
-      - job_name: '$SERVICE_NAME'
-         metrics_path: /probe
-         params:
-            module: [http_2xx]
-         static_configs:
-            - targets:
-            - http://localhost:9090
-            - http://localhost:9100
-         relabel_configs:
-            - source_labels: [__address__]
-            target_label: __param_target
-            - source_labels: [__param_target]
-            target_label: instance
-            - target_label: __address__
-            replacement: localhost:9115
-      EOF
-         systemctl restart prometheus.service
-      }
-
-      snmp_exporter () {
-      SERVICE_NAME=snmp_exporter
-      SYSTEMD_OPTION=&quot;ExecStart=/usr/local/bin/snmp_exporter --config.file=&quot;/etc/&quot;$SERVICE_NAME&quot;/snmp.yml&quot;&quot;
-      creating
-      systemd_service
-      tee -a $SERVICE_CONF &lt;&lt;EOF
-      - job_name: '$SERVICE_NAME'
-         static_configs:
-            - targets:
-            - localhost # SNMP device.
-         metrics_path: /snmp
-         params:
-            module: [if_mib]
-         relabel_configs:
-            - source_labels: [__address__]
-            target_label: __param_target
-            - source_labels: [__param_target]
-            target_label: instance
-            - target_label: __address__
-            replacement: localhost:9116  # The SNMP exporter's real hostname:port.
-      EOF
-      systemctl restart prometheus.service
-      }
-
-      prometheus
-      node_exporter
-      blackbox_exporter
-      snmp_exporter
+prometheus
+node_exporter
+blackbox_exporter
+snmp_exporter                                                                                                                                                                                          
 </code></pre>
 
 </details>

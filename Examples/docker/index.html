@@ -371,8 +371,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../scripts/" class="md-nav__link">
-        Scripts
+      <a href="../shell%20scripts/" class="md-nav__link">
+        Shell scripts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terraform/" class="md-nav__link">
+        Terraform
       </a>
     </li>
   
@@ -452,45 +466,45 @@
 <summary>Source code file: main.sh</summary>
 
 
-<pre><code class="language-bash">   #!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 
-   STAT_FILE_MD5=/tmp/tg_stat_md5
-   STAT_FILE=/tmp/tg_stat
+STAT_FILE_MD5=/tmp/tg_stat_md5
+STAT_FILE=/tmp/tg_stat
 
-   # Get Status
-   curl -s https://api.telegram.org/bot$BOT_API/getUpdates\?offset\=-1 &gt; $STAT_FILE
+# Get Status
+curl -s https://api.telegram.org/bot$BOT_API/getUpdates\?offset\=-1 &gt; $STAT_FILE
 
-   # Checking for repeated commands
-   if [ &quot;$(cat $STAT_FILE | jq -r '.result | .[] | .update_id' | md5sum)&quot; = &quot;$(test -f $STAT_FILE_MD5 &amp;&amp; cat $STAT_FILE_MD5)&quot; ]; then
-   exit
-   fi
+# Checking for repeated commands
+if [ &quot;$(cat $STAT_FILE | jq -r '.result | .[] | .update_id' | md5sum)&quot; = &quot;$(test -f $STAT_FILE_MD5 &amp;&amp; cat $STAT_FILE_MD5)&quot; ]; then
+ exit
+fi
 
-   # Remember team message id in history
-   cat $STAT_FILE | jq -r '.result | .[] | .update_id' | md5sum &gt; $STAT_FILE_MD5
+# Remember team message id in history
+cat $STAT_FILE | jq -r '.result | .[] | .update_id' | md5sum &gt; $STAT_FILE_MD5
 
-   # Check NULL and allow ID from environment
-   if [ &quot;$ALLOW_ID&quot; = &quot;&quot; ]; then
-   exit
-   # curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Sorry, not allowed.&quot;
-   else
-   cat $STAT_FILE | grep -P &quot;$ALLOW_ID&quot; || exit
-   fi
+# Check NULL and allow ID from environment
+if [ &quot;$ALLOW_ID&quot; = &quot;&quot; ]; then
+ exit
+# curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Sorry, not allowed.&quot;
+else
+ cat $STAT_FILE | grep -P &quot;$ALLOW_ID&quot; || exit
+fi
 
-   # Checking the completion status of an operation
-   function check {
-   if [ $? = 0 ]; then
-   curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Operation completed successfully ✅&quot;
-   else
-   curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Operation completed unsuccessfully ❌&quot;
-   fi
-   }
+# Checking the completion status of an operation
+function check {
+if [ $? = 0 ]; then
+ curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Operation completed successfully ✅&quot;
+else
+ curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Operation completed unsuccessfully ❌&quot;
+fi
+}
 
-   # Command operator
-   if [ -f /data/$(cat $STAT_FILE | jq -r '.result | .[] | .message | .text') ]; then
-   /data/$(cat $STAT_FILE | jq -r '.result | .[] | .message | .text'); check
-   else
-   curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Sorry, script not found ♻&quot;
-   fi
+# Command operator
+if [ -f /data/$(cat $STAT_FILE | jq -r '.result | .[] | .message | .text') ]; then
+ /data/$(cat $STAT_FILE | jq -r '.result | .[] | .message | .text'); check
+else
+ curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Sorry, script not found ♻&quot;
+fi
 </code></pre>
 
 
