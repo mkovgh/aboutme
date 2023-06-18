@@ -2,37 +2,37 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mkovgh.github.io/aboutme/</loc>
-         <lastmod>2023-06-09</lastmod>
+         <lastmod>2023-06-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mkovgh.github.io/aboutme/goals/</loc>
-         <lastmod>2023-06-09</lastmod>
+         <lastmod>2023-06-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mkovgh.github.io/aboutme/Examples/ansible/</loc>
-         <lastmod>2023-06-09</lastmod>
+         <lastmod>2023-06-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mkovgh.github.io/aboutme/Examples/docker/</loc>
-         <lastmod>2023-06-09</lastmod>
+         <lastmod>2023-06-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mkovgh.github.io/aboutme/Examples/real%20life/</loc>
-         <lastmod>2023-06-09</lastmod>
+         <lastmod>2023-06-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mkovgh.github.io/aboutme/Examples/shell%20scripts/</loc>
-         <lastmod>2023-06-09</lastmod>
+         <lastmod>2023-06-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mkovgh.github.io/aboutme/Examples/terraform/</loc>
-         <lastmod>2023-06-09</lastmod>
+         <lastmod>2023-06-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
