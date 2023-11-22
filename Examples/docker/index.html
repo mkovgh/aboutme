@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.2">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.10">
     
     
       
@@ -26,10 +26,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.d451bc0e.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.fad675c6.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.a5377069.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.356b1318.min.css">
       
       
 
@@ -381,14 +381,18 @@
       
         <li class="md-nav__item">
   <a href="#environment" class="md-nav__link">
-    Environment
+    <span class="md-ellipsis">
+      Environment
+    </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#run-docker-container" class="md-nav__link">
-    Run Docker Container
+    <span class="md-ellipsis">
+      Run Docker Container
+    </span>
   </a>
   
 </li>
@@ -497,14 +501,18 @@
       
         <li class="md-nav__item">
   <a href="#environment" class="md-nav__link">
-    Environment
+    <span class="md-ellipsis">
+      Environment
+    </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#run-docker-container" class="md-nav__link">
-    Run Docker Container
+    <span class="md-ellipsis">
+      Run Docker Container
+    </span>
   </a>
   
 </li>
@@ -527,66 +535,97 @@
 <h1 id="docker">Docker</h1>
 <h2 id="environment">Environment</h2>
 <ul>
-<li><code>BOT_API</code> = Use the API key obtained from <a href="https://core.telegram.org/bots#6-botfather">BotFather</a>.</li>
-<li><code>ALLOW_ID</code> = List of allowed telegrams ID users (example ID|ID2).</li>
+<li><code>TOKEN</code> = Use the API key obtained from <a href="https://core.telegram.org/bots#6-botfather">BotFather</a>.</li>
+<li><code>CHAT_ID</code> = List of allowed telegrams ID users (example ID, ID2).</li>
 </ul>
 <p>The /data directory is intended for the location of scripts there.</p>
 <details>
 
-<summary>Source code file: main.sh</summary>
+<summary>Source code:</summary>
 
 
-<pre><code class="language-bash">#!/bin/bash
+<pre><code>#!/bin/bash
 
-STAT_FILE_MD5=/tmp/tg_stat_md5
-STAT_FILE=/tmp/tg_stat
+chat_id=$CHAT_ID
+token=$TOKEN
 
-# Get Status
-curl -s https://api.telegram.org/bot$BOT_API/getUpdates\?offset\=-1 &gt; $STAT_FILE
+message_time_file=message_time_file.txt
 
-# Checking for repeated commands
-if [ &quot;$(cat $STAT_FILE | jq -r '.result | .[] | .update_id' | md5sum)&quot; = &quot;$(test -f $STAT_FILE_MD5 &amp;&amp; cat $STAT_FILE_MD5)&quot; ]; then
- exit
-fi
-
-# Remember team message id in history
-cat $STAT_FILE | jq -r '.result | .[] | .update_id' | md5sum &gt; $STAT_FILE_MD5
-
-# Check NULL and allow ID from environment
-if [ &quot;$ALLOW_ID&quot; = &quot;&quot; ]; then
- exit
-# curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Sorry, not allowed.&quot;
-else
- cat $STAT_FILE | grep -P &quot;$ALLOW_ID&quot; || exit
-fi
-
-# Checking the completion status of an operation
-function check {
-if [ $? = 0 ]; then
- curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Operation completed successfully ✅&quot;
-else
- curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Operation completed unsuccessfully ❌&quot;
-fi
+send_message() {
+    curl -s -X POST &quot;https://api.telegram.org/bot$token/sendMessage&quot; -d chat_id=&quot;$1&quot; -d text=&quot;$2&quot;
 }
 
-# Command operator
-if [ -f /data/$(cat $STAT_FILE | jq -r '.result | .[] | .message | .text') ]; then
- /data/$(cat $STAT_FILE | jq -r '.result | .[] | .message | .text'); check
-else
- curl -s -X POST https://api.telegram.org/bot$BOT_API/sendMessage -d chat_id=&quot;$(cat $STAT_FILE | jq -r '.result | .[] | .message | .chat | .id')&quot; -d text=&quot;Sorry, script not found ♻&quot;
+update_commands() {
+ curl -s -X POST &quot;https://api.telegram.org/bot$token/setMyCommands&quot; -H &quot;Content-Type: application/json&quot; -d '{
+     &quot;commands&quot;: [
+         {&quot;command&quot;: &quot;start&quot;, &quot;description&quot;: &quot;Start the bot&quot;},
+         {&quot;command&quot;: &quot;help&quot;, &quot;description&quot;: &quot;Show help message&quot;}
+     ]
+ }'
+}
+
+if [ -f ./functions ]; then
+      source ./functions
+      echo &quot;Functions is Load&quot;
 fi
+
+if [ ! -f $message_time_file ]; then
+    touch $message_time_file
+    echo &quot;Temporary last message file is created&quot;
+fi    
+
+while true; do
+    curl -s &quot;https://api.telegram.org/bot$token/getUpdates?offset=-1&quot; | jq -r '.result[].message.date // empty' | while read -r message_time; do
+
+
+        if [ $message_time = $(&lt;$message_time_file) ]; then
+            continue
+        fi
+
+        echo &quot;$message_time&quot; &gt; &quot;$message_time_file&quot;
+
+        curl -s &quot;https://api.telegram.org/bot$token/getUpdates?offset=-1&quot; | jq -r '.result[].message.chat.id // empty' | while read -r _id; do
+
+            if [ &quot;$_id&quot; == &quot;null&quot; ] || [ -z &quot;$_id&quot; ]; then
+                continue
+            fi
+
+            if ! echo &quot;$chat_id&quot; | grep -q &quot;$_id&quot;; then
+                continue
+            fi
+
+            curl -s &quot;https://api.telegram.org/bot$token/getUpdates?offset=-1&quot; | jq -r '.result[].message.text // empty' | while read -r updates; do
+
+                if [ &quot;$updates&quot; == &quot;null&quot; ] || [ -z &quot;$updates&quot; ]; then
+                    continue
+                fi
+
+                        case $updates in
+                              &quot;/start&quot;)
+                                    send_message &quot;$_id&quot; &quot;Hey, I'm a console chat bot. Use the team block for interaction 📁&quot;
+                          ;;
+                              &quot;/update_commands&quot;)
+                          update_commands &quot;$_id&quot; &quot;Telegram command list is update ✔️&quot;
+                          ;;
+                              &quot;/help&quot;)
+                          send_message &quot;$_id&quot; &quot;To perform commands, use a set function block in an executable file.&quot;
+                               ;;
+                  esac
+            done
+        done
+    done
+done
 </code></pre>
 
 
 </details>
 
 <h2 id="run-docker-container">Run Docker Container</h2>
-<pre><code>  docker run -d --name shell-tg-bot \
-  -e BOT_API= \
-  -e ALLOW_ID= \
-  -v shell-tg-bot_data:/data
+<pre><code>  docker run -d --name shell-tgbot \
+  -e TOKEN= \
+  -e CHAT_ID= \
   --restart unless-stopped \
-  mkovdk/shell-tg-bot
+  mkovdk/shell-tgbot
 </code></pre>
 
 
@@ -625,10 +664,11 @@ fi
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.a264c092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.726fbb30.min.js"></script>
+      <script src="../../assets/javascripts/bundle.6c14ae12.min.js"></script>
       
     
   </body>
